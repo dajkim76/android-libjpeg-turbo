@@ -29,7 +29,6 @@
 
 package org.libjpegturbo.turbojpeg;
 
-import java.awt.image.*;
 import java.nio.*;
 import java.io.*;
 
@@ -82,31 +81,6 @@ public class TJCompressor implements Closeable {
   public TJCompressor(byte[] srcImage, int width, int pitch, int height,
                       int pixelFormat) throws TJException {
     setSourceImage(srcImage, width, pitch, height, pixelFormat);
-  }
-
-  /**
-   * Create a TurboJPEG compressor instance and associate the uncompressed
-   * source image stored in <code>srcImage</code> with the newly created
-   * instance.
-   *
-   * @param srcImage see
-   * {@link #setSourceImage(BufferedImage, int, int, int, int)} for description
-   *
-   * @param x see
-   * {@link #setSourceImage(BufferedImage, int, int, int, int)} for description
-   *
-   * @param y see
-   * {@link #setSourceImage(BufferedImage, int, int, int, int)} for description
-   *
-   * @param width see
-   * {@link #setSourceImage(BufferedImage, int, int, int, int)} for description
-   *
-   * @param height see
-   * {@link #setSourceImage(BufferedImage, int, int, int, int)} for description
-   */
-  public TJCompressor(BufferedImage srcImage, int x, int y, int width,
-                      int height) throws TJException {
-    setSourceImage(srcImage, x, y, width, height);
   }
 
   /**
@@ -173,91 +147,7 @@ public class TJCompressor implements Closeable {
     srcX = srcY = -1;
   }
 
-  /**
-   * Associate an uncompressed RGB or grayscale source image with this
-   * compressor instance.
-   *
-   * @param srcImage a <code>BufferedImage</code> instance containing RGB or
-   * grayscale pixels to be compressed or encoded.  This image is not modified.
-   *
-   * @param x x offset (in pixels) of the region in the source image from which
-   * the JPEG or YUV image should be compressed/encoded
-   *
-   * @param y y offset (in pixels) of the region in the source image from which
-   * the JPEG or YUV image should be compressed/encoded
-   *
-   * @param width width (in pixels) of the region in the source image from
-   * which the JPEG or YUV image should be compressed/encoded (0 = use the
-   * width of the source image)
-   *
-   * @param height height (in pixels) of the region in the source image from
-   * which the JPEG or YUV image should be compressed/encoded (0 = use the
-   * height of the source image)
-   */
-  public void setSourceImage(BufferedImage srcImage, int x, int y, int width,
-                             int height) throws TJException {
-    if (handle == 0) init();
-    if (srcImage == null || x < 0 || y < 0 || width < 0 || height < 0)
-      throw new IllegalArgumentException("Invalid argument in setSourceImage()");
-    srcX = x;
-    srcY = y;
-    srcWidth = (width == 0) ? srcImage.getWidth() : width;
-    srcHeight = (height == 0) ? srcImage.getHeight() : height;
-    if (x + width > srcImage.getWidth() || y + height > srcImage.getHeight())
-      throw new IllegalArgumentException("Compression region exceeds the bounds of the source image");
 
-    int pixelFormat;
-    boolean intPixels = false;
-    if (byteOrder == null)
-      byteOrder = ByteOrder.nativeOrder();
-    switch (srcImage.getType()) {
-    case BufferedImage.TYPE_3BYTE_BGR:
-      pixelFormat = TJ.PF_BGR;  break;
-    case BufferedImage.TYPE_4BYTE_ABGR:
-    case BufferedImage.TYPE_4BYTE_ABGR_PRE:
-      pixelFormat = TJ.PF_XBGR;  break;
-    case BufferedImage.TYPE_BYTE_GRAY:
-      pixelFormat = TJ.PF_GRAY;  break;
-    case BufferedImage.TYPE_INT_BGR:
-      if (byteOrder == ByteOrder.BIG_ENDIAN)
-        pixelFormat = TJ.PF_XBGR;
-      else
-        pixelFormat = TJ.PF_RGBX;
-      intPixels = true;  break;
-    case BufferedImage.TYPE_INT_RGB:
-    case BufferedImage.TYPE_INT_ARGB:
-    case BufferedImage.TYPE_INT_ARGB_PRE:
-      if (byteOrder == ByteOrder.BIG_ENDIAN)
-        pixelFormat = TJ.PF_XRGB;
-      else
-        pixelFormat = TJ.PF_BGRX;
-      intPixels = true;  break;
-    default:
-      throw new IllegalArgumentException("Unsupported BufferedImage format");
-    }
-    srcPixelFormat = pixelFormat;
-
-    WritableRaster wr = srcImage.getRaster();
-    if (intPixels) {
-      SinglePixelPackedSampleModel sm =
-        (SinglePixelPackedSampleModel)srcImage.getSampleModel();
-      srcStride = sm.getScanlineStride();
-      DataBufferInt db = (DataBufferInt)wr.getDataBuffer();
-      srcBufInt = db.getData();
-      srcBuf = null;
-    } else {
-      ComponentSampleModel sm =
-        (ComponentSampleModel)srcImage.getSampleModel();
-      int pixelSize = sm.getPixelStride();
-      if (pixelSize != TJ.getPixelSize(pixelFormat))
-        throw new IllegalArgumentException("Inconsistency between pixel format and pixel size in BufferedImage");
-      srcPitch = sm.getScanlineStride();
-      DataBufferByte db = (DataBufferByte)wr.getDataBuffer();
-      srcBuf = db.getData();
-      srcBufInt = null;
-    }
-    srcYUVImage = null;
-  }
 
   /**
    * Associate an uncompressed YUV planar source image with this compressor
@@ -383,31 +273,6 @@ public class TJCompressor implements Closeable {
     return buf;
   }
 
-  /**
-   * @deprecated Use
-   * {@link #setSourceImage(BufferedImage, int, int, int, int)} and
-   * {@link #compress(byte[], int)} instead.
-   */
-  @SuppressWarnings("checkstyle:JavadocMethod")
-  @Deprecated
-  public void compress(BufferedImage srcImage, byte[] dstBuf, int flags)
-                       throws TJException {
-    setSourceImage(srcImage, 0, 0, 0, 0);
-    compress(dstBuf, flags);
-  }
-
-  /**
-   * @deprecated Use
-   * {@link #setSourceImage(BufferedImage, int, int, int, int)} and
-   * {@link #compress(int)} instead.
-   */
-  @SuppressWarnings("checkstyle:JavadocMethod")
-  @Deprecated
-  public byte[] compress(BufferedImage srcImage, int flags)
-                         throws TJException {
-    setSourceImage(srcImage, 0, 0, 0, 0);
-    return compress(flags);
-  }
 
   /**
    * Encode the uncompressed source image associated with this compressor
@@ -530,31 +395,6 @@ public class TJCompressor implements Closeable {
     return dstYUVImage.getBuf();
   }
 
-  /**
-   * @deprecated Use
-   * {@link #setSourceImage(BufferedImage, int, int, int, int)} and
-   * {@link #encodeYUV(byte[], int)} instead.
-   */
-  @SuppressWarnings("checkstyle:JavadocMethod")
-  @Deprecated
-  public void encodeYUV(BufferedImage srcImage, byte[] dstBuf, int flags)
-                        throws TJException {
-    setSourceImage(srcImage, 0, 0, 0, 0);
-    encodeYUV(dstBuf, flags);
-  }
-
-  /**
-   * @deprecated Use
-   * {@link #setSourceImage(BufferedImage, int, int, int, int)} and
-   * {@link #encodeYUV(int, int)} instead.
-   */
-  @SuppressWarnings("checkstyle:JavadocMethod")
-  @Deprecated
-  public byte[] encodeYUV(BufferedImage srcImage, int flags)
-                          throws TJException {
-    setSourceImage(srcImage, 0, 0, 0, 0);
-    return encodeYUV(flags);
-  }
 
   /**
    * Returns the size of the image (in bytes) generated by the most recent
