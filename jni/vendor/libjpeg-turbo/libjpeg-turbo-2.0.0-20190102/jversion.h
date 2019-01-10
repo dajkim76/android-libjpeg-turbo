@@ -50,3 +50,8 @@
 
 #define JCOPYRIGHT_SHORT \
   "Copyright (C) 1991-2019 The libjpeg-turbo Project and many others"
+
+#define PACKAGE_NAME "libjpeg-turbo"
+#undef VERSION
+#define VERSION "2.0.0"
+#define BUILD "20190102"

@@ -16,6 +16,7 @@
  */
 
 #define JPEG_INTERNALS
+#include "jversion.h"
 #include "jinclude.h"
 #include "jpeglib.h"
 #include "jpegcomp.h"
